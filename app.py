@@ -25,8 +25,7 @@ USER_TOKEN = '<|USER|>'
 ASSISTANT_TOKEN = '<|ASSISTANT|>'
 
 HfFolder.save_token(os.getenv("HF_TOKEN"))
-
-peft_model_id = "rjac/temp_model"
+peft_model_id = "rjac/temp_modelv3"
 config = PeftConfig.from_pretrained(peft_model_id)
 # Custom One
 tokenizer = AutoTokenizer.from_pretrained(peft_model_id,use_auth_token=True)
@@ -56,8 +55,9 @@ class StopOnTokens(StoppingCriteria):
 
 def user(message, history):
     # Append the user's message to the conversation history
-    return "", history[-1:] + [[message, ""]]
-    # return "", [[message, ""]]
+    # return "", history + [[message, ""]]
+    # return "", history[-1:] + [[message, ""]]
+    return "", [[message, ""]]
 
 
 def chat(curr_system_message, history):
@@ -75,11 +75,11 @@ def chat(curr_system_message, history):
     generate_kwargs = dict(
         model_inputs,
         streamer=streamer,
-        max_new_tokens=150,
+        max_new_tokens=350,
         do_sample=True,
-        top_p=0.90,
+        top_p=0.95,
         top_k=1000,
-        temperature=0.7,
+        temperature=1.00,
         num_beams=1,
         stopping_criteria=StoppingCriteriaList([stop])
     )
@@ -123,7 +123,7 @@ with gr.Blocks() as demo:
                 stop = gr.Button("Stop")
                 clear = gr.Button("Clear")
 
-    chatbot = gr.Chatbot().style(height=250)
+    chatbot = gr.Chatbot().style(height=350)
 
 
     submit_event = msg.submit(
