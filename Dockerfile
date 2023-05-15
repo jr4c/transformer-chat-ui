@@ -46,5 +46,6 @@ WORKDIR /workspace
 COPY  requirements.txt .
 RUN pip install -r requirements.txt
 EXPOSE 7860
+COPY context_builder.py .
 COPY app.py .
 CMD ["python","app.py"]

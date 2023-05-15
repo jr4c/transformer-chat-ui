@@ -7,3 +7,5 @@ accelerate
 sentencepiece==0.1.97
 bitsandbytes==0.37.1
 loralib==0.1.1
+sqlalchemy
+psycopg2-binary

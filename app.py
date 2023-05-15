@@ -7,6 +7,7 @@ import numpy as np
 from torch.nn import functional as F
 import os
 from threading import Thread
+from context_builder import build_user_context
 
 from peft import (
     LoraConfig,
@@ -98,16 +99,31 @@ def chat(curr_system_message, history):
     return partial_text
 
 
+def user_context(user_id):
+    user_info = build_user_context(user_id)
+    return user_info
+
 with gr.Blocks() as demo:
     # history = gr.State([])
     gr.Markdown("## StableLM-Senza-alpha-7b Chat")
 
+    with gr.Row():
+
+        user_id_holder = gr.Textbox(
+            label="User ID",
+            placeholder="####",
+            show_label=True
+        ).style(container=False)        
+
+        search_user_info = gr.Button("Search")
+
     system_msg = gr.Textbox(
         "User Info",
         label="System Message",
-        interactive=True,
+        interactive=False,
         visible=True
     )
+
 
     with gr.Row():
         with gr.Column():            
@@ -124,6 +140,9 @@ with gr.Blocks() as demo:
                 clear = gr.Button("Clear")
 
     chatbot = gr.Chatbot().style(height=350)
+
+
+    search_user_info_event = search_user_info.click(fn=user_context, inputs=[user_id_holder],outputs=[system_msg], queue=False)
 
 
     submit_event = msg.submit(
