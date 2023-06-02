@@ -1,6 +1,14 @@
 import gradio as gr
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    pipeline,
+    StoppingCriteria,
+    StoppingCriteriaList,
+    TextIteratorStreamer,
+    BitsAndBytesConfig,
+)
 from huggingface_hub import HfFolder
 import time
 import numpy as np
@@ -21,33 +29,51 @@ from peft import (
 
 print(f"Starting to load the model to memory")
 
-
-USER_TOKEN = '<|USER|>'
-ASSISTANT_TOKEN = '<|ASSISTANT|>'
+#this can be setup from the Dialog template
+USER_TOKEN = '<|user|>\n'
+ASSISTANT_TOKEN = '<|assistant|>\n'
+EOS_TOKEN = '<|end|>\n'
 
 HfFolder.save_token(os.getenv("HF_TOKEN"))
-peft_model_id = "rjac/temp_modelv3"
+#peft_model_id = "rjac/temp_modelv3"
+peft_model_id = "rjac/senza-chat-stablelm-2-0"
+
 config = PeftConfig.from_pretrained(peft_model_id)
 # Custom One
 tokenizer = AutoTokenizer.from_pretrained(peft_model_id,use_auth_token=True)
+tokenizer.eos_token_id = 50280
+tokenizer.pad_token_id = 1
+
 # tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
-language_model = AutoModelForCausalLM.from_pretrained(
-    config.base_model_name_or_path,
-    load_in_8bit=True,
-    device_map='auto',
-    torch_dtype=torch.float16,
+#language_model = AutoModelForCausalLM.from_pretrained(
+#    config.base_model_name_or_path,
+#    load_in_8bit=True,
+#    device_map='auto',
+#    torch_dtype=torch.float16,
+#)
+
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    #bnb_4bit_compute_dtype=torch.bfloat16,
 )
+
+#model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, quantization_config=bnb_config, device_map={"":0})
+language_model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, quantization_config=bnb_config, device_map="auto")
+
 
 language_model = PeftModel.from_pretrained(language_model, peft_model_id)
 
 print(f"Sucessfully loaded the model to the memory")
-
-start_message = """<|SYSTEM|># Nutrition Assistant: Answer questions related to Senza nutrition app, using the context provided within triple backticks.\nIf a question is unrelated to the app, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}\n```\n"""
+#this can be setup from the Dialog template
+start_message = """<|system|>\n# Nutrition Assistant: Answer questions related to Senza nutrition app, using the context provided within triple backticks.\nIf a question is unrelated to the app, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}\n```\n<|end|>\n"""
 
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
         #stop_ids = [50278, 50279, 50277, 1, 0] # TODO: Verify what tokens are this
-        stop_ids = [535, 50277, 50278, 50279, 1, 0]
+        stop_ids = [50280, 1, 0]
         #stop_ids = [1, 0]
         for stop_id in stop_ids:
             if input_ids[0][-1] == stop_id:
@@ -57,8 +83,8 @@ class StopOnTokens(StoppingCriteria):
 def user(message, history):
     # Append the user's message to the conversation history
     # return "", history + [[message, ""]]
-    # return "", history[-1:] + [[message, ""]]
-    return "", [[message, ""]]
+    return "", history[-2:] + [[message, ""]]
+    # return "", [[message, ""]]
 
 
 def chat(curr_system_message, history):
@@ -68,7 +94,9 @@ def chat(curr_system_message, history):
     system_message = start_message.format(curr_system_message)
     # Construct the input message string for the model by concatenating the current system message and conversation history
     messages = system_message + \
-        "".join(["".join([USER_TOKEN+item[0], ASSISTANT_TOKEN+item[1]]) for item in history])
+        "".join(["".join([USER_TOKEN+item[0]+EOS_TOKEN, ASSISTANT_TOKEN+item[1]+EOS_TOKEN]) for item in history])
+    
+    messages = messages[:-len(EOS_TOKEN)]
     print(messages)
     # Tokenize the messages string
     model_inputs = tokenizer([messages], return_tensors="pt").to("cuda")
@@ -76,11 +104,11 @@ def chat(curr_system_message, history):
     generate_kwargs = dict(
         model_inputs,
         streamer=streamer,
-        max_new_tokens=350,
+        max_new_tokens=180,
         do_sample=True,
         top_p=0.95,
         top_k=1000,
-        temperature=1.00,
+        temperature=0.10,
         num_beams=1,
         stopping_criteria=StoppingCriteriaList([stop])
     )
