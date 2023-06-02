@@ -25,6 +25,7 @@ select
 sau.first_name,
 sau.female,
 sau.birthdate,
+DATE_PART('years',AGE(cast(NOW() AS date),sau.birthdate)) as age,
 sau.macro_netcarbs,
 sau.macro_protein,
 sau.macro_fat,

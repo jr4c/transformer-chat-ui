@@ -37,7 +37,7 @@ EOS_TOKEN = '<|end|>\n'
 HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/temp_modelv3"
 #peft_model_id = "rjac/senza-chat-stablelm-2-0"
-base_model_name_or_path
+base_model_name_or_path = "rjac/senza-chat-stablelm-v4"
 
 #config = PeftConfig.from_pretrained(peft_model_id)
 # Custom One
