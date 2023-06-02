@@ -30,20 +30,20 @@ from peft import (
 print(f"Starting to load the model to memory")
 
 #this can be setup from the Dialog template
-USER_TOKEN = '<|user|>\n'
-ASSISTANT_TOKEN = '<|assistant|>\n'
-EOS_TOKEN = '<|end|>\n'
+USER_TOKEN = '>>QUESTION<<\n'
+ASSISTANT_TOKEN = '>>ANSWER<<\n'
+EOS_TOKEN = '<|endoftext|>\n'
 
 HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/temp_modelv3"
 #peft_model_id = "rjac/senza-chat-stablelm-2-0"
-base_model_name_or_path = "rjac/senza-chat-stablelm-v4"
+base_model_name_or_path = "rjac/senza-chat-falcon7b-v0"
 
 #config = PeftConfig.from_pretrained(peft_model_id)
 # Custom One
 tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path,use_auth_token=True)
-tokenizer.eos_token_id = 50280
-tokenizer.pad_token_id = 1
+tokenizer.eos_token_id = 11
+tokenizer.pad_token_id = 39
 
 # tokenizer = AutoTokenizer.from_pretrained(config.base_model_name_or_path)
 #language_model = AutoModelForCausalLM.from_pretrained(
@@ -62,7 +62,7 @@ bnb_config = BitsAndBytesConfig(
 )
 
 #model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, quantization_config=bnb_config, device_map={"":0})
-language_model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path, quantization_config=bnb_config, device_map="auto")
+language_model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path, quantization_config=bnb_config, trust_remote_code=True, device_map="auto")
 
 # if using PEFT QLORA
 #language_model = PeftModel.from_pretrained(language_model, peft_model_id)
@@ -70,13 +70,13 @@ language_model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path, q
 print(f"Sucessfully loaded the model to the memory")
 #this can be setup from the Dialog template
 #start_message = """<|system|>\n# Nutrition Assistant: Answer questions related to Senza nutrition app, using the context provided within triple backticks.\nIf a question is unrelated to the app, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}\n```\n<|end|>\n"""
-start_message = """<|system|>\n# Coach: Answer users questions related to the Senza nutrition app using the context provided between triple backticks. \nIf a question is unrelated to the app or nutrition, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}the net carb content of food is calculated by taking the grams of total carbs and subtracting grams of fiber and sugar alcohols.\n```\n<|end|>\n"""
+start_message = """>>INTRODUCTION<<\n# Coach: Answer users questions related to the Senza nutrition app using the context provided between triple backticks. \nIf a question is unrelated to the app or nutrition, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}the net carb content of food is calculated by taking the grams of total carbs and subtracting grams of fiber and sugar alcohols.\n```\n<|endoftext|>\n"""
 
 
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
         #stop_ids = [50278, 50279, 50277, 1, 0] # TODO: Verify what tokens are this
-        stop_ids = [50280, 1, 0]
+        stop_ids = [11, 39, 2, 6, 5]
         #stop_ids = [1, 0]
         for stop_id in stop_ids:
             if input_ids[0][-1] == stop_id:
