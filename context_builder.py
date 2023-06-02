@@ -71,36 +71,46 @@ gender_mapping = {True: 'Female', False: 'Male'}
 def create_user_info_prompt(user_data):
 
     user = user_data["first_name"]
-    height = user_data["height"]
+    height = int(user_data["height"])
     pronoun_mapping = {True: 'She', False: 'He'}
+    gender_type_mapping = {True: 'woman', False: 'man'}
+
     pronoun = pronoun_mapping.get(user_data['female'], 'Not Specify')
-    gender = gender_mapping.get(user_data['female'], 'Not Specify')
-    birthdate_str = user_data['birthdate']
-    
-    if birthdate_str is None:
-        age_in_years = None
+    gender = gender_type_mapping.get(user_data['female'], 'Not Specify')
+
+
+    if user_data.get("age"):
+        age_in_years = int(user_data["age"])
     else:
-        #birthdate = datetime.datetime.strptime(birthdate_str, '%Y-%m-%d %H:%M:%S')
-        #birthdate = datetime.datetime.strptime(birthdate_str, '%m/%d/%y %H:%M')
+        birthdate_str = user_data['birthdate']
         
-        try:
-            birthdate = birthdate_str
-        except ValueError:
+        if birthdate_str is None:
+            age_in_years = None
+        else:
+            #birthdate = datetime.datetime.strptime(birthdate_str, '%Y-%m-%d %H:%M:%S')
+            #birthdate = datetime.datetime.strptime(birthdate_str, '%m/%d/%y %H:%M')
+            
             try:
                 birthdate = birthdate_str
             except ValueError:
-                print(f"Unable to parse date string {birthdate_str}")
-                birthdate = datetime.datetime.now()
-                
-        
-        today = datetime.datetime.now()
-        age_in_years = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
-        age_in_years = abs(age_in_years)
+                try:
+                    birthdate = birthdate_str
+                except ValueError:
+                    print(f"Unable to parse date string {birthdate_str}")
+                    birthdate = datetime.datetime.now()
+                    
+            
+            today = datetime.datetime.now()
+            age_in_years = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+            age_in_years = abs(age_in_years)
+            age_in_years = user_data["age"]
 
         #age_in_years = abs((current_date - birthdate).days // 365)
     
     app_usage = create_time_in_app_prompt(user_data)
-    user_info = f'{user} is {age_in_years}-years-old {gender} ({height} inches tall) and is using ketosis for weight control - {app_usage}'
+    #user_info = f'{user} is {age_in_years}-years-old {gender} ({height} inches tall) and is using ketosis for weight control - {app_usage}'    
+    user_info = f'{user} has been using Senza for {app_usage} and is a {age_in_years}-years-old {gender} who is {height} inches tall.'
+
     #user_info = f'User info: User {user}, Gender {gender}, Age {age_in_years}, Height {height} inches.'
     return user_info
 
@@ -112,16 +122,16 @@ def create_string_table(user_data):
     if len(data_list) > 0:
         sorted_data_list = sorted(data_list, key=lambda x: x['entry_timestamp'])
         most_recent_date = sorted_data_list[-1]['entry_timestamp'] 
-        for entry in sorted_data_list:
+        for entry in sorted_data_list: 
             entry_date = entry['entry_timestamp']
             time_range_days = (most_recent_date - entry_date).days
             entry['time_range'] = f"last {time_range_days} days"
         
         n_logs = len(data_list)
         if n_logs < 10:
-            table_string = f"{user} only logged {n_logs} days of macronutrient content in the last 10 days:\n"
+            table_string = f"{user} only logged {n_logs} day(s) of food items in the last 10 days:\n"
         else:
-            table_string = f"{user} logged {n_logs} days of macronutrient content:\n"
+            table_string = f"{user} logged {n_logs} days of food items:\n"
 
         for entry in sorted_data_list[::-1]:
             time_range = entry['time_range']
@@ -131,28 +141,32 @@ def create_string_table(user_data):
             total_carbs = int(entry['total_carbs'])
             calories = int(entry['cal'])
             
-            table_string += f"{time_range}: Proteins {proteins}, Fats {fats}, NC {net_carbs}, Total Carbs {total_carbs}, Calories {calories} \n"
+            table_string += f"{time_range}: Proteins {proteins}g, Fats {fats}g, Net carbs {net_carbs}g, total carbs {total_carbs}g , {calories} calories \n"
     else:
-        table_string = f"{user} logged no macronutrient content in the last 10 days \n"
+        table_string = f"{user} logged no food items in the journal in the last 10 days \n"
 
     return table_string
 
 def create_user_weight_prompt(user_data):
     pronoun_mapping = {True: 'Her', False: 'His'}
+    gender_pronoun_mapping = {True: 'She', False: 'He'}
+
     pronoun = pronoun_mapping.get(user_data['female'], 'Not Specify')
-    sw = user_data['starting_weight']
-    cw = user_data['current_weight']
-    tw = user_data['target_weight']
+    gender_pronoun = gender_pronoun_mapping.get(user_data['female'], 'Not Specify')
+    # if the weight metrics are None will be setup to 0
+    sw = round(user_data.get('starting_weight',0),1)
+    cw = round(user_data.get('current_weight',0),1)
+    tw = round(user_data.get('target_weight',0),1)
     
     #weight_string= f"{pronoun} initial weight was {sw} lbs,{pronoun} current weight is {cw} lbs,{pronoun} target weight is {tw} lbs."
     #weight_string = f"Weights: Starting weight {sw}, current weight {cw}, target weight {tw}, days under net carbs (NC) {unc}."
-    weight_string = f"{pronoun} weight began at {sw} lbs, is currently {cw} lbs, and has a target of {tw} lbs"
+    weight_string = f"{pronoun} weight began at {sw} lbs, is currently {cw} lbs, and {gender_pronoun} wants to weight {tw} lbs"
     return weight_string
 
 
 def create_time_in_app_prompt(user_data):
     days_installed = int(user_data["days_installed"])
-    sub_prompt = f'App usage (days): {days_installed}'
+    sub_prompt = f'{days_installed} day(s)'
     return sub_prompt
 
 
@@ -165,7 +179,7 @@ def create_macros_prompt(user_data):
     fats = user_data["macro_fat"]
     nc = user_data["macro_netcarbs"]
     cal = user_data["target_calories"]
-    macros_string = f'{pronoun} has a goal to eat close to these macronutrient totals each day: Proteins {proteins} , Fats {fats} , NC {nc} and Calories {cal}'
+    macros_string = f'{pronoun} has a goal to eat close to these macronutrient totals each day: Proteins {proteins}g , Fats {fats}g , net carbs {nc}g and {cal} calories'
     return macros_string
 
 
@@ -207,6 +221,7 @@ def preprocess_function(sample, tokenizer, max_source_length, max_target_length,
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
 
+    
 def build_user_context(user_id):
 
 	conn_template = f'postgresql+psycopg2://{{user}}:{{password}}@{{host}}:{{port}}/{{dbname}}'

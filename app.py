@@ -36,11 +36,12 @@ EOS_TOKEN = '<|end|>\n'
 
 HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/temp_modelv3"
-peft_model_id = "rjac/senza-chat-stablelm-2-0"
+#peft_model_id = "rjac/senza-chat-stablelm-2-0"
+base_model_name_or_path
 
-config = PeftConfig.from_pretrained(peft_model_id)
+#config = PeftConfig.from_pretrained(peft_model_id)
 # Custom One
-tokenizer = AutoTokenizer.from_pretrained(peft_model_id,use_auth_token=True)
+tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path,use_auth_token=True)
 tokenizer.eos_token_id = 50280
 tokenizer.pad_token_id = 1
 
@@ -61,14 +62,16 @@ bnb_config = BitsAndBytesConfig(
 )
 
 #model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, quantization_config=bnb_config, device_map={"":0})
-language_model = AutoModelForCausalLM.from_pretrained(config.base_model_name_or_path, quantization_config=bnb_config, device_map="auto")
+language_model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path, quantization_config=bnb_config, device_map="auto")
 
-
-language_model = PeftModel.from_pretrained(language_model, peft_model_id)
+# if using PEFT QLORA
+#language_model = PeftModel.from_pretrained(language_model, peft_model_id)
 
 print(f"Sucessfully loaded the model to the memory")
 #this can be setup from the Dialog template
-start_message = """<|system|>\n# Nutrition Assistant: Answer questions related to Senza nutrition app, using the context provided within triple backticks.\nIf a question is unrelated to the app, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}\n```\n<|end|>\n"""
+#start_message = """<|system|>\n# Nutrition Assistant: Answer questions related to Senza nutrition app, using the context provided within triple backticks.\nIf a question is unrelated to the app, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}\n```\n<|end|>\n"""
+start_message = """<|system|>\n# Coach: Answer users questions related to the Senza nutrition app using the context provided between triple backticks. \nIf a question is unrelated to the app or nutrition, respond: I am sorry, I\'m afraid I cannot answer that question.\n```\n{}the net carb content of food is calculated by taking the grams of total carbs and subtracting grams of fiber and sugar alcohols.\n```\n<|end|>\n"""
+
 
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
@@ -108,7 +111,7 @@ def chat(curr_system_message, history):
         do_sample=True,
         top_p=0.95,
         top_k=1000,
-        temperature=0.10,
+        temperature=0.2,
         num_beams=1,
         stopping_criteria=StoppingCriteriaList([stop])
     )
@@ -133,7 +136,7 @@ def user_context(user_id):
 
 with gr.Blocks() as demo:
     # history = gr.State([])
-    gr.Markdown("## StableLM-Senza-alpha-7b Chat")
+    gr.Markdown("## StableLM-Senza-alpha-7b Chat - Version 4")
 
     with gr.Row():
 
