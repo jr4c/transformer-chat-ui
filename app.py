@@ -89,7 +89,7 @@ def user(message, history):
     # return "", [[message, ""]]
 
 
-def chat(curr_system_message, history):
+def chat(curr_system_message, history, temperature):
     # Initialize a StopOnTokens object
     stop = StopOnTokens()
 
@@ -100,6 +100,7 @@ def chat(curr_system_message, history):
     
     messages = messages[:-len(EOS_TOKEN)]
     print(messages)
+    print(f"temperature: {temperature}")
     # Tokenize the messages string
     model_inputs = tokenizer([messages], return_tensors="pt").to("cuda")
     token_type_ids = model_inputs.pop("token_type_ids")
@@ -107,11 +108,11 @@ def chat(curr_system_message, history):
     generate_kwargs = dict(
         model_inputs,
         streamer=streamer,
-        max_new_tokens=180,
+        max_new_tokens=100,
         do_sample=True,
         top_p=0.90,
         top_k=1000,
-        temperature=0.45,
+        temperature=temperature,
         num_beams=1,
         stopping_criteria=StoppingCriteriaList([stop])
     )
@@ -163,12 +164,15 @@ with gr.Blocks() as demo:
                 placeholder="Chat Message Box",
                 show_label=False
             ).style(container=False)
+
         
         with gr.Column():
             with gr.Row():
+                temperature = gr.Slider( minimum=0.01, maximum=3.0, value=1.0, step=0.1, interactive=True, label="Temperature")
                 submit = gr.Button("Submit")
                 stop = gr.Button("Stop")
                 clear = gr.Button("Clear")
+        
 
     chatbot = gr.Chatbot().style(height=350)
 
@@ -179,13 +183,13 @@ with gr.Blocks() as demo:
     submit_event = msg.submit(
         fn=user, inputs=[msg, chatbot], outputs=[msg, chatbot], queue=False
     ).then(
-        fn=chat, inputs=[system_msg, chatbot], outputs=[chatbot], queue=True
+        fn=chat, inputs=[system_msg, chatbot,temperature], outputs=[chatbot], queue=True
     )
 
     submit_click_event = submit.click(
         fn=user, inputs=[msg, chatbot], outputs=[msg, chatbot], queue=False
     ).then(
-        fn=chat, inputs=[system_msg, chatbot], outputs=[chatbot], queue=True
+        fn=chat, inputs=[system_msg, chatbot, temperature], outputs=[chatbot], queue=True
     )
     
     stop.click(
