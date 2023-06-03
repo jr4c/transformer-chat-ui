@@ -168,7 +168,7 @@ with gr.Blocks() as demo:
         
         with gr.Column():
             with gr.Row():
-                temperature = gr.Slider( minimum=0.01, maximum=3.0, value=1.0, step=0.1, interactive=True, label="Temperature")
+                temperature = gr.Slider( minimum=0.05, maximum=3.0, value=1.0, step=0.05, interactive=True, label="Temperature")
                 submit = gr.Button("Submit")
                 stop = gr.Button("Stop")
                 clear = gr.Button("Clear")
