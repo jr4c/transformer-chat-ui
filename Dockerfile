@@ -43,6 +43,7 @@ RUN curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master
         pyenv global $(pyenv install-latest --print "3.10") && \
         pip install "wheel<1"
 WORKDIR /workspace
+RUN pip install torch==2.0.0+cu117 torchvision==0.15.1+cu117 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
 COPY  requirements.txt .
 RUN pip install -r requirements.txt
 EXPOSE 7860

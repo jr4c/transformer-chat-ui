@@ -56,7 +56,6 @@ tokenizer.pad_token_id = 39
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
     #bnb_4bit_compute_dtype=torch.bfloat16,
 )
@@ -103,15 +102,16 @@ def chat(curr_system_message, history):
     print(messages)
     # Tokenize the messages string
     model_inputs = tokenizer([messages], return_tensors="pt").to("cuda")
+    token_type_ids = model_inputs.pop("token_type_ids")
     streamer = TextIteratorStreamer(tokenizer, timeout=30., skip_prompt=True, skip_special_tokens=True)
     generate_kwargs = dict(
         model_inputs,
         streamer=streamer,
         max_new_tokens=180,
         do_sample=True,
-        top_p=0.95,
+        top_p=0.90,
         top_k=1000,
-        temperature=0.2,
+        temperature=0.45,
         num_beams=1,
         stopping_criteria=StoppingCriteriaList([stop])
     )
@@ -136,7 +136,7 @@ def user_context(user_id):
 
 with gr.Blocks() as demo:
     # history = gr.State([])
-    gr.Markdown("## StableLM-Senza-alpha-7b Chat - Version 4")
+    gr.Markdown("## Senza AI Coach - Falcon-7B Version 0")
 
     with gr.Row():
 
@@ -194,5 +194,5 @@ with gr.Blocks() as demo:
     
     clear.click(lambda: None, None, [chatbot], queue=False)
 
-demo.queue(max_size=32, concurrency_count=6)
+demo.queue(max_size=32, concurrency_count=3)
 demo.launch(server_name="0.0.0.0")
