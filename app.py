@@ -39,7 +39,7 @@ HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/senza-chat-stablelm-2-0"
 
 #model_id = "rjac/falcon7B-recsys-senza"
-model_id = "rjac/senza-falcon7b-recsys-v1"
+model_id = "senza-recsys-stablelm-alpha-7B-runpod"
 peft_config = PeftConfig.from_pretrained(model_id)
 model_name = peft_config.base_model_name_or_path
 
