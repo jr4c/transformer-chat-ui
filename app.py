@@ -39,7 +39,7 @@ HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/senza-chat-stablelm-2-0"
 
 #model_id = "rjac/falcon7B-recsys-senza"
-model_id = "senza-recsys-stablelm-alpha-7B-runpod"
+model_id = "rjac/senza-recsys-stablelm-alpha-7B-runpod"
 peft_config = PeftConfig.from_pretrained(model_id)
 model_name = peft_config.base_model_name_or_path
 
@@ -84,7 +84,7 @@ def chat(curr_system_message, history, temperature):
     print(f"temperature: {temperature}")
     # Tokenize the messages string
     model_inputs = tokenizer([messages], return_tensors="pt").to("cuda")
-    token_type_ids = model_inputs.pop("token_type_ids")
+    #token_type_ids = model_inputs.pop("token_type_ids")
     streamer = TextIteratorStreamer(tokenizer, timeout=60., skip_prompt=True, skip_special_tokens=True)
     generate_kwargs = dict(
         model_inputs,
