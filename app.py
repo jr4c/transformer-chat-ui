@@ -39,7 +39,7 @@ HfFolder.save_token(os.getenv("HF_TOKEN"))
 #peft_model_id = "rjac/senza-chat-stablelm-2-0"
 
 #model_id = "rjac/falcon7B-recsys-senza"
-model_id = "rjac/senza-recsys-falcon-7b"
+model_id = "rjac/senza-falcon7b-recsys-v1"
 peft_config = PeftConfig.from_pretrained(model_id)
 model_name = peft_config.base_model_name_or_path
 
@@ -57,7 +57,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 model.config.use_cache = False
 language_model = PeftModel.from_pretrained(model, model_id).to("cuda")
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 eos = tokenizer.encode("<|endoftext|>###")
 
@@ -118,7 +118,7 @@ def user_context(user_id, meal_time_diner = "Dinner"):
 
 with gr.Blocks() as demo:
     # history = gr.State([])
-    gr.Markdown("## Senza AI RecSys - Falcon-7B")
+    gr.Markdown(f"## Senza AI RecSys - model id: {model_id}")
 
     with gr.Row():
 
