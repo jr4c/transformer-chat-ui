@@ -41,7 +41,8 @@ HfFolder.save_token(os.getenv("HF_TOKEN"))
 #model_id = "rjac/falcon7B-recsys-senza"
 #model_id = "rjac/senza-recsys-falcon-7B-runpod1"
 #model_id = "rjac/senza-recsys-falcon-7B-runpod-v2"
-model_id = "rjac/senza-recsys-falcon-7B-XL-v1"
+#model_id = "rjac/senza-recsys-falcon-7B-XL-v1"
+model_id = "rjac/senza-recsys-llama2-7b-chat-hf-v1"
 
 peft_config = PeftConfig.from_pretrained(model_id)
 model_name = peft_config.base_model_name_or_path
@@ -50,13 +51,15 @@ bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=False,
 
 )
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
-    trust_remote_code=True
+    trust_remote_code=True,
+    use_auth_token=True,
 )
 model.config.use_cache = False
 language_model = PeftModel.from_pretrained(model, model_id).to("cuda")
@@ -66,7 +69,7 @@ eos = tokenizer.encode("<|endoftext|>###")
 
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        stop_ids = [11, 19468, 39, 2, 6, 5]
+        stop_ids = [2]
         for stop_id in stop_ids:
             if input_ids[0][-1] == stop_id:
                 return True
